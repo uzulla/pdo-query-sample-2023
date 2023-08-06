@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  db:
+    build:
+      context: docker/mysqld
+      dockerfile: Dockerfile
+    container_name: some-sample-mysqld
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password!
+      MYSQL_DATABASE: dev_db
+      MYSQL_USER: docker
+      MYSQL_PASSWORD: docker
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./docker/mysqld/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysqld/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  php:
+    build:
+      context: docker/php
+      dockerfile: Dockerfile
+    container_name: some-sample-php
+    environment:
+      DB_DSN: "mysql:host=db;port=3306;dbname=dev_db;charset=utf8mb4"
+      DB_USER_NAME: "docker"
+      DB_USER_PASS: "docker" 
+    working_dir: "/app"
+    volumes:
+      - ./:/app
+      - ./docker/php/apache2:/etc/apache2
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+    ports:
+      - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - db
+
